@@ -1,10 +1,13 @@
 altair==5.5.0
 attrs==25.3.0
+beautifulsoup4==4.13.4
 blinker==1.9.0
 cachetools==5.5.2
 certifi==2025.7.14
 charset-normalizer==3.4.2
 click==8.1.8
+filelock==3.19.1
+gdown==5.2.0
 gitdb==4.0.12
 GitPython==3.1.45
 google-auth==2.40.3
@@ -29,6 +32,7 @@ pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pydeck==0.9.1
 pyparsing==3.2.3
+PySocks==1.7.1
 python-dateutil==2.9.0.post0
 pytz==2025.2
 referencing==0.36.2
@@ -38,10 +42,12 @@ rpds-py==0.26.0
 rsa==4.9.1
 six==1.17.0
 smmap==5.0.2
+soupsieve==2.7
 streamlit==1.47.1
 tenacity==9.1.2
 toml==0.10.2
 tornado==6.5.1
+tqdm==4.67.1
 typing_extensions==4.14.1
 tzdata==2025.2
 urllib3==2.5.0
