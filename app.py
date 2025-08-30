@@ -53,12 +53,17 @@ if check_password():
             '¬¨‚Ä†': ' ', 'â€™': "'", 'â€œ': '"', 'â€': '"',
             'â€“': '-', 'â€”': '-', 'â€¦': '...', 'Â ': ' '
         }
-        text_columns = ['Summary', 'formats', 'title', 'congress'] # Added 'congress' for cleaning
+        
+        # --- THIS PART IS FIXED ---
+        # Clean only the columns that actually contain long-form text.
+        # The 'congress' column likely contains numbers and does not need this cleaning.
+        text_columns = ['Summary', 'formats', 'title'] 
         for col in text_columns:
             if col in df.columns:
                 for garbled, clean in replacements.items():
                     df[col] = df[col].str.replace(garbled, clean, regex=False)
         return df
+        # --- END OF FIX ---
 
     @st.cache_data
     def load_existing_hashes(_sheet):
@@ -76,7 +81,6 @@ if check_password():
     # --- Main App Logic ---
     st.title("🗳️ Nuclear Bill Labeling App")
     
-    # Item 1: Add instructions
     st.info(
         """
         **Your task in this project is to identify congressional bills that may have been relevant to nuclear weapons.** The bill summaries each contain one or more elements (each sentence or paragraph), each of which relates to 
@@ -125,7 +129,6 @@ if check_password():
     summary_hash = row["summary_hash"]
 
     # --- UI Display ---
-    # Item 2: Add Congress number
     st.markdown("### 🔢 Legislation Number")
     congress_info = row.get("congress", "[Congress # Missing]")
     bill_number = row.get("legislation_number", "[Bill # Missing]")
@@ -139,14 +142,12 @@ if check_password():
     # --- User Input Form ---
     st.markdown("### 🧠 Your Evaluation")
     with st.form(key="evaluation_form"):
-        # Item 3: Change question wording
         st.radio(
             "1. Is *any element* of the bill summary displayed above likely to be relevant to nuclear weapons?", 
             ["No", "Yes"], 
             key="is_nuclear"
         )
         
-        # Item 5: Change anchorings
         confidence_labels = {
             1: "1: Very Uncertain", 
             2: "2: Somewhat Uncertain", 
@@ -154,7 +155,6 @@ if check_password():
             4: "4: Certain", 
             5: "5: Highly Certain"
         }
-        # Item 4: Change question wording
         st.select_slider(
             "2. How certain are you in your response to the previous question?",
             options=confidence_labels.keys(),
@@ -162,7 +162,6 @@ if check_password():
             key="certainty"
         )
         
-        # Item 6: Change question wording
         st.text_area(
             "Please explain your response to the previous questions, in one or two sentences (three at most). "
             "Feel free to copy-paste language from the summary itself if it’d be helpful, or just explain your reasoning.", 
