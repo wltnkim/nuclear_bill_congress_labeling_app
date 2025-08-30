@@ -142,18 +142,18 @@ if check_password():
     # Create a form for user evaluation to prevent reruns on every widget interaction.
     st.markdown("### 🧠 Your Evaluation")
     with st.form(key="evaluation_form"):
-        st.radio("Is this related to nuclear weapons?", ["No", "Yes"], key="is_nuclear")
+        st.radio("1. Is any element of the bill summary displayed above likely to be relevant to nuclear weapons?", ["No", "Yes"], key="is_nuclear")
         confidence_labels = {
-            1: "1: Very Uncertain", 2: "2: Somewhat Uncertain", 3: "3: Moderately Confident",
-            4: "4: Confident", 5: "5: Highly Certain"
+            1: "1: Very Uncertain", 2: "2: Somewhat Uncertain", 3: "3: Moderately Certain",
+            4: "4: Certain", 5: "5: Highly Certain"
         }
         st.select_slider(
-            "How confident are you?",
+            "2. How certain are you in your response to the previous question?",
             options=confidence_labels.keys(),
             format_func=lambda key: confidence_labels[key],
             key="certainty"
         )
-        st.text_area("Explain your decision or highlight key elements:", key="notes")
+        st.text_area("Please explain your response to the previous questions, in one or two sentences (three at most). Feel free to copy-paste language from the summary itself if it’d be helpful, or just explain your reasoning.", key="notes")
         submitted = st.form_submit_button("✅ Submit")
 
     # --- SUBMISSION LOGIC ---
