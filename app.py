@@ -53,17 +53,12 @@ if check_password():
             '¬¨‚Ä†': ' ', 'â€™': "'", 'â€œ': '"', 'â€': '"',
             'â€“': '-', 'â€”': '-', 'â€¦': '...', 'Â ': ' '
         }
-        
-        # --- THIS PART IS FIXED ---
-        # Clean only the columns that actually contain long-form text.
-        # The 'congress' column likely contains numbers and does not need this cleaning.
-        text_columns = ['Summary', 'formats', 'title'] 
+        text_columns = ['Summary', 'formats', 'title']
         for col in text_columns:
             if col in df.columns:
                 for garbled, clean in replacements.items():
                     df[col] = df[col].str.replace(garbled, clean, regex=False)
         return df
-        # --- END OF FIX ---
 
     @st.cache_data
     def load_existing_hashes(_sheet):
@@ -77,6 +72,25 @@ if check_password():
         if pd.isna(s):
             return ""
         return str(s).strip()
+
+    # --- THIS IS THE NEW HELPER FUNCTION ---
+    # Formats the Congress number with the correct ordinal suffix (e.g., 116 -> "116th Congress").
+    def format_congress(congress_number):
+        if pd.isna(congress_number):
+            return "[Congress # Missing]"
+        try:
+            # Convert to integer to remove decimals like .0
+            num = int(congress_number)
+            # Apply suffix rules
+            if 11 <= (num % 100) <= 13:
+                suffix = 'th'
+            else:
+                suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(num % 10, 'th')
+            return f"{num}{suffix} Congress"
+        except (ValueError, TypeError):
+            # If it's not a number, return it as is.
+            return str(congress_number)
+    # --- END OF NEW FUNCTION ---
 
     # --- Main App Logic ---
     st.title("🗳️ Nuclear Bill Labeling App")
@@ -130,9 +144,13 @@ if check_password():
 
     # --- UI Display ---
     st.markdown("### 🔢 Legislation Number")
-    congress_info = row.get("congress", "[Congress # Missing]")
+    # --- THIS PART IS FIXED ---
+    # Use the new formatting function for the congress number.
+    congress_info = format_congress(row.get("congress"))
     bill_number = row.get("legislation_number", "[Bill # Missing]")
-    st.write(f"{congress_info}, {bill_number}")
+    legislation_display = f"{congress_info}, {bill_number}"
+    st.write(legislation_display)
+    # --- END OF FIX ---
 
     st.markdown("### 🏷️ Title")
     st.write(row.get("title", "[Missing]"))
@@ -170,12 +188,15 @@ if check_password():
         submitted = st.form_submit_button("✅ Submit")
 
     if submitted:
+        # --- THIS PART IS FIXED ---
+        # Save the correctly formatted legislation string to Google Sheets.
         new_row = [
-            f"{congress_info}, {bill_number}", user_id,
+            legislation_display, user_id,
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             1 if st.session_state.is_nuclear == "Yes" else 0,
             st.session_state.certainty, st.session_state.notes, summary_hash
         ]
+        # --- END OF FIX ---
         with st.spinner("Saving response..."):
             sheet.append_row(new_row)
             st.success("✅ Response saved!")
