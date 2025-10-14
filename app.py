@@ -162,7 +162,7 @@ if check_password():
         # --- THIS PART IS FIXED ---
         # Added backslash \ to escape the markdown numbered list formatting.
         st.radio(
-            "1\. Is *any element* of the bill summary displayed above likely to be relevant to nuclear weapons?", 
+            "1\. Is *any element* of the bill summary displayed above likely to be relevant to nuclear weaponssss?", 
             ["No", "Yes"], 
             key=is_nuclear_key,
             index=0,
