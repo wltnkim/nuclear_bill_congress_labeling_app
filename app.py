@@ -151,53 +151,46 @@ if check_password():
     # --- User Input Form ---
     st.markdown("### 🧠 Your Evaluation")
 
-    # Use per-summary widget keys so answers don't carry over between different summaries.
-    base_key = f"resp_{summary_hash}"
-    is_nuclear_key = f"{base_key}_is_nuclear"
-    certainty_key = f"{base_key}_certainty"
-    notes_key = f"{base_key}_notes"
+    # Use unique keys for each summary's widgets to prevent state from carrying over.
+    is_nuclear_key = f"is_nuclear_{summary_hash}"
+    certainty_key = f"certainty_{summary_hash}"
+    notes_key = f"notes_{summary_hash}"
 
-    # --- Form UI ---
-    with st.form(key="evaluation_form"):
-        # --- THIS PART IS FIXED ---
-        # Added backslash \ to escape the markdown numbered list formatting.
+    with st.form(key=f"evaluation_form_{summary_hash}"):
         st.radio(
             "1\. Is *any element* of the bill summary displayed above likely to be relevant to nuclear weapons?", 
             ["No", "Yes"], 
-            key=is_nuclear_key,
-            index=0,
+            key=is_nuclear_key
         )
         
         confidence_labels = {
-            1: "1: Very Uncertain", 
-            2: "2: Somewhat Uncertain", 
-            3: "3: Moderately Certain",
-            4: "4: Certain", 
-            5: "5: Highly Certain"
+            1: "1: Very Uncertain", 2: "2: Somewhat Uncertain", 3: "3: Moderately Certain",
+            4: "4: Certain", 5: "5: Highly Certain"
         }
         st.select_slider(
             "2\. How certain are you in your response to the previous question?",
-            options=list(confidence_labels.keys()),
+            options=confidence_labels.keys(),
             format_func=lambda key: confidence_labels[key],
             key=certainty_key,
-            value=3,
+            value=3 # Default value for the slider
         )
         
         st.text_area(
             "3\. Please explain your response to the previous questions, in one or two sentences (three at most). "
             "Feel free to copy-paste language from the summary itself if it’d be helpful, or just explain your reasoning.", 
-            key=notes_key,
-            value="",
+            key=notes_key
         )
-        # --- END OF FIX ---
+        
         submitted = st.form_submit_button("✅ Submit")
 
-    # Handle submission (runs in the main script after the form is submitted)
+    # --- THIS IS THE FIXED SUBMISSION LOGIC ---
     if submitted:
-        is_nuclear_val = st.session_state.get(is_nuclear_key)
-        certainty_val = st.session_state.get(certainty_key)
-        notes_val = st.session_state.get(notes_key, "")
+        # 1. Get the values from the submitted form using their unique keys.
+        is_nuclear_val = st.session_state[is_nuclear_key]
+        certainty_val = st.session_state[certainty_key]
+        notes_val = st.session_state[notes_key]
 
+        # 2. Prepare and save the data to Google Sheets.
         new_row = [
             legislation_display, user_id,
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -209,17 +202,17 @@ if check_password():
             st.success("✅ Response saved!")
             time.sleep(0.5)
 
+        # 3. Filter out the just-completed summary.
         new_filtered = filtered[filtered["summary_hash"] != summary_hash]
         if new_filtered.empty:
             st.success("🎉 All summaries have been labeled!")
             st.stop()
 
-        # advance to a new random summary
+        # 4. Advance to the next random summary.
         st.session_state.current_row = new_filtered.sample(1).iloc[0]
-        # clear the per-summary widget state so next form uses different keys
-        st.session_state.pop(is_nuclear_key, None)
-        st.session_state.pop(certainty_key, None)
-        st.session_state.pop(notes_key, None)
 
-        # Force a rerun so the UI immediately displays the next summary with cleared inputs
-        st.experimental_rerun()
+        # 5. Force the script to rerun from the top.
+        # This will display the new summary and, because the widget keys have changed,
+        # the form will automatically reset to its default values.
+        st.rerun()
+    # --- END OF FIX ---
