@@ -162,7 +162,7 @@ if check_password():
         # --- THIS PART IS FIXED ---
         # Added backslash \ to escape the markdown numbered list formatting.
         st.radio(
-            "1\. Is *any element* of the bill summary displayed above likely to be relevant to nuclear weaponssss?", 
+            "1\. Is *any element* of the bill summary displayed above likely to be relevant to nuclear weapons?", 
             ["No", "Yes"], 
             key=is_nuclear_key,
             index=0,
@@ -216,8 +216,10 @@ if check_password():
 
         # advance to a new random summary
         st.session_state.current_row = new_filtered.sample(1).iloc[0]
+        # clear the per-summary widget state so next form uses different keys
+        st.session_state.pop(is_nuclear_key, None)
+        st.session_state.pop(certainty_key, None)
+        st.session_state.pop(notes_key, None)
 
-    # clear the per-summary widget state so next form uses different keys
-    st.session_state.pop(is_nuclear_key, None)
-    st.session_state.pop(certainty_key, None)
-    st.session_state.pop(notes_key, None)
+        # Force a rerun so the UI immediately displays the next summary with cleared inputs
+        st.experimental_rerun()
