@@ -150,6 +150,52 @@ if check_password():
 
     # --- User Input Form ---
     st.markdown("### 🧠 Your Evaluation")
+
+    # Ensure widget keys exist with sensible defaults so we can reliably reset them after submit
+    if "is_nuclear" not in st.session_state:
+        st.session_state.is_nuclear = "No"
+    if "certainty" not in st.session_state:
+        st.session_state.certainty = 3
+    if "notes" not in st.session_state:
+        st.session_state.notes = ""
+
+    # Submission callback: runs when the form submit button is clicked. It saves the row,
+    # advances to a new random summary and clears the widget state so the next form is empty/default.
+    def submit_and_advance():
+        new_row = [
+            legislation_display, user_id,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            1 if st.session_state.get("is_nuclear") == "Yes" else 0,
+            st.session_state.get("certainty"), st.session_state.get("notes", ""), summary_hash
+        ]
+        # save to sheet
+        sheet.append_row(new_row)
+
+        # compute remaining summaries and advance
+        new_filtered = filtered[filtered["summary_hash"] != summary_hash]
+        if new_filtered.empty:
+            # mark that there are no more remaining; UI will handle stop on next run
+            st.session_state.no_more_remaining = True
+            # clear widgets
+            st.session_state.pop("is_nuclear", None)
+            st.session_state.pop("certainty", None)
+            st.session_state.pop("notes", None)
+            # rerun so UI shows the end state
+            st.experimental_rerun()
+
+        st.session_state.current_row = new_filtered.sample(1).iloc[0]
+
+        # Reset the form-related widget state so the next form appears cleared/default
+        st.session_state.pop("is_nuclear", None)
+        st.session_state.pop("certainty", None)
+        st.session_state["notes"] = ""
+
+        # small flag to show a saved notification after the rerun
+        st.session_state.show_saved = True
+
+        # rerun to load new row and show success message
+        st.experimental_rerun()
+
     with st.form(key="evaluation_form"):
         # --- THIS PART IS FIXED ---
         # Added backslash \ to escape the markdown numbered list formatting.
@@ -168,7 +214,7 @@ if check_password():
         }
         st.select_slider(
             "2\. How certain are you in your response to the previous question?",
-            options=confidence_labels.keys(),
+            options=list(confidence_labels.keys()),
             format_func=lambda key: confidence_labels[key],
             key="certainty"
         )
@@ -179,28 +225,15 @@ if check_password():
             key="notes"
         )
         # --- END OF FIX ---
-        submitted = st.form_submit_button("✅ Submit")
+        st.form_submit_button("✅ Submit", on_click=submit_and_advance)
 
-    if submitted:
-        new_row = [
-            legislation_display, user_id,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            1 if st.session_state.is_nuclear == "Yes" else 0,
-            st.session_state.certainty, st.session_state.notes, summary_hash
-        ]
-        with st.spinner("Saving response..."):
-            sheet.append_row(new_row)
-            st.success("✅ Response saved!")
-            time.sleep(0.5)
+    # After the callback and rerun, show a confirmation message once and handle end state
+    if st.session_state.get("show_saved"):
+        st.success("✅ Response saved!")
+        # remove the flag so message shows only once
+        st.session_state.pop("show_saved", None)
+        time.sleep(0.4)
 
-        new_filtered = filtered[filtered["summary_hash"] != summary_hash]
-        if new_filtered.empty:
-            st.success("🎉 All summaries have been labeled!")
-            st.stop()
-        
-        st.session_state.current_row = new_filtered.sample(1).iloc[0]
-        if "is_nuclear" in st.session_state: del st.session_state.is_nuclear
-        if "certainty" in st.session_state: del st.session_state.certainty
-        if "notes" in st.session_state: del st.session_state.notes
-        
-        st.rerun()
+    if st.session_state.get("no_more_remaining"):
+        st.success("🎉 All summaries have been labeled!")
+        st.stop()
