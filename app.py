@@ -159,43 +159,7 @@ if check_password():
     if "notes" not in st.session_state:
         st.session_state.notes = ""
 
-    # Submission callback: runs when the form submit button is clicked. It saves the row,
-    # advances to a new random summary and clears the widget state so the next form is empty/default.
-    def submit_and_advance():
-        new_row = [
-            legislation_display, user_id,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            1 if st.session_state.get("is_nuclear") == "Yes" else 0,
-            st.session_state.get("certainty"), st.session_state.get("notes", ""), summary_hash
-        ]
-        # save to sheet
-        sheet.append_row(new_row)
-
-        # compute remaining summaries and advance
-        new_filtered = filtered[filtered["summary_hash"] != summary_hash]
-        if new_filtered.empty:
-            # mark that there are no more remaining; UI will handle stop on next run
-            st.session_state.no_more_remaining = True
-            # clear widgets
-            st.session_state.pop("is_nuclear", None)
-            st.session_state.pop("certainty", None)
-            st.session_state.pop("notes", None)
-            # rerun so UI shows the end state
-            st.experimental_rerun()
-
-        st.session_state.current_row = new_filtered.sample(1).iloc[0]
-
-        # Reset the form-related widget state so the next form appears cleared/default
-        st.session_state.pop("is_nuclear", None)
-        st.session_state.pop("certainty", None)
-        st.session_state["notes"] = ""
-
-        # small flag to show a saved notification after the rerun
-        st.session_state.show_saved = True
-
-        # rerun to load new row and show success message
-        st.experimental_rerun()
-
+    # --- Form UI ---
     with st.form(key="evaluation_form"):
         # --- THIS PART IS FIXED ---
         # Added backslash \ to escape the markdown numbered list formatting.
@@ -225,15 +189,30 @@ if check_password():
             key="notes"
         )
         # --- END OF FIX ---
-        st.form_submit_button("✅ Submit", on_click=submit_and_advance)
+        submitted = st.form_submit_button("✅ Submit")
 
-    # After the callback and rerun, show a confirmation message once and handle end state
-    if st.session_state.get("show_saved"):
-        st.success("✅ Response saved!")
-        # remove the flag so message shows only once
-        st.session_state.pop("show_saved", None)
-        time.sleep(0.4)
+    # Handle submission (runs in the main script after the form is submitted)
+    if submitted:
+        new_row = [
+            legislation_display, user_id,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            1 if st.session_state.get("is_nuclear") == "Yes" else 0,
+            st.session_state.get("certainty"), st.session_state.get("notes", ""), summary_hash
+        ]
+        with st.spinner("Saving response..."):
+            sheet.append_row(new_row)
+            st.success("✅ Response saved!")
+            time.sleep(0.5)
 
-    if st.session_state.get("no_more_remaining"):
-        st.success("🎉 All summaries have been labeled!")
-        st.stop()
+        new_filtered = filtered[filtered["summary_hash"] != summary_hash]
+        if new_filtered.empty:
+            st.success("🎉 All summaries have been labeled!")
+            st.stop()
+
+        # advance to a new random summary
+        st.session_state.current_row = new_filtered.sample(1).iloc[0]
+
+        # clear the form widget state so next form appears blank/default
+        st.session_state.pop("is_nuclear", None)
+        st.session_state.pop("certainty", None)
+        st.session_state.pop("notes", None)
