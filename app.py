@@ -151,13 +151,11 @@ if check_password():
     # --- User Input Form ---
     st.markdown("### 🧠 Your Evaluation")
 
-    # Ensure widget keys exist with sensible defaults so we can reliably reset them after submit
-    if "is_nuclear" not in st.session_state:
-        st.session_state.is_nuclear = "No"
-    if "certainty" not in st.session_state:
-        st.session_state.certainty = 3
-    if "notes" not in st.session_state:
-        st.session_state.notes = ""
+    # Use per-summary widget keys so answers don't carry over between different summaries.
+    base_key = f"resp_{summary_hash}"
+    is_nuclear_key = f"{base_key}_is_nuclear"
+    certainty_key = f"{base_key}_certainty"
+    notes_key = f"{base_key}_notes"
 
     # --- Form UI ---
     with st.form(key="evaluation_form"):
@@ -166,7 +164,8 @@ if check_password():
         st.radio(
             "1\. Is *any element* of the bill summary displayed above likely to be relevant to nuclear weapons?", 
             ["No", "Yes"], 
-            key="is_nuclear"
+            key=is_nuclear_key,
+            index=0,
         )
         
         confidence_labels = {
@@ -180,24 +179,30 @@ if check_password():
             "2\. How certain are you in your response to the previous question?",
             options=list(confidence_labels.keys()),
             format_func=lambda key: confidence_labels[key],
-            key="certainty"
+            key=certainty_key,
+            value=3,
         )
         
         st.text_area(
             "3\. Please explain your response to the previous questions, in one or two sentences (three at most). "
             "Feel free to copy-paste language from the summary itself if it’d be helpful, or just explain your reasoning.", 
-            key="notes"
+            key=notes_key,
+            value="",
         )
         # --- END OF FIX ---
         submitted = st.form_submit_button("✅ Submit")
 
     # Handle submission (runs in the main script after the form is submitted)
     if submitted:
+        is_nuclear_val = st.session_state.get(is_nuclear_key)
+        certainty_val = st.session_state.get(certainty_key)
+        notes_val = st.session_state.get(notes_key, "")
+
         new_row = [
             legislation_display, user_id,
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            1 if st.session_state.get("is_nuclear") == "Yes" else 0,
-            st.session_state.get("certainty"), st.session_state.get("notes", ""), summary_hash
+            1 if is_nuclear_val == "Yes" else 0,
+            certainty_val, notes_val, summary_hash
         ]
         with st.spinner("Saving response..."):
             sheet.append_row(new_row)
@@ -212,7 +217,7 @@ if check_password():
         # advance to a new random summary
         st.session_state.current_row = new_filtered.sample(1).iloc[0]
 
-        # clear the form widget state so next form appears blank/default
-        st.session_state.pop("is_nuclear", None)
-        st.session_state.pop("certainty", None)
-        st.session_state.pop("notes", None)
+    # clear the per-summary widget state so next form uses different keys
+    st.session_state.pop(is_nuclear_key, None)
+    st.session_state.pop(certainty_key, None)
+    st.session_state.pop(notes_key, None)
