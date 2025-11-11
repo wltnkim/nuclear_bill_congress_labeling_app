@@ -1,0 +1,11 @@
+# Streamlit Secrets (비밀번호)
+.streamlit/
+
+# SQLite Database (데이터)
+*.db
+main.db
+
+# Python & macOS cache
+__pycache__/
+*.pyc
+.DS_Store
