@@ -169,7 +169,7 @@ if check_password():
     st.markdown("### 🏷️ Title")
     st.write(row.get("title", "[Missing]"))
     st.markdown("### 📄 Summary")
-    st.write(summary_text.replace('$', '\$'))
+    st.write(summary_text.replace('$', r'\$'))
 
     st.markdown("### 🧠 Your Evaluation")
 
