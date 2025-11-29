@@ -48,8 +48,15 @@ db_name = "labeling_app"
 
 # Create SQLAlchemy connection engine
 db_url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?charset=utf8mb4"
-conn = st.connection("mysql_db", type="sql", url=db_url, autocommit=True)
-
+# conn = st.connection("mysql_db", type="sql", url=db_url, autocommit=True)
+conn = st.connection(
+    "mysql_db",
+    type="sql",
+    url=db_url,
+    autocommit=True,
+    pool_pre_ping=True,
+    pool_recycle=3600
+)
 
 # ---------------------------------------------------------
 # 3. Main App Logic (Runs only if password check passes)
