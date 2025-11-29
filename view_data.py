@@ -91,6 +91,22 @@ if check_admin_password():  # <--- Function call
         c1.metric(label="Total Labels", value=total)
         c2.metric(label="Round 1", value=r1)
         c3.metric(label="Round 2", value=r2)
+
+        st.write("#### 👤 Labels by User (Top Contributors)")
+        
+        if 'user_id' in df_labels.columns and not df_labels.empty:
+            user_counts = df_labels['user_id'].value_counts().reset_index()
+            user_counts.columns = ['User ID', 'Count']
+            
+            uc_col1, uc_col2 = st.columns([1, 2])
+            
+            with uc_col1:
+                st.dataframe(user_counts, use_container_width=True, hide_index=True)
+            
+            with uc_col2:
+                st.bar_chart(user_counts.set_index('User ID'))
+        else:
+            st.info("user_id information is not available yet.")
         
     except Exception as e:
         st.error(f"Error loading data: {e}")
