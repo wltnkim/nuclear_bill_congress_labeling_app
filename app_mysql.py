@@ -36,8 +36,15 @@ db_port = "3307"
 db_name = "labeling_app"
 
 db_url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?charset=utf8mb4"
-conn = st.connection("mysql_db", type="sql", url=db_url, autocommit=True)
-
+# conn = st.connection("mysql_db", type="sql", url=db_url, autocommit=True)
+conn = st.connection(
+    "mysql_db",
+    type="sql",
+    url=db_url,
+    autocommit=True,
+    pool_pre_ping=True,
+    pool_recycle=3600
+)
 
 # --- 3. Function Definitions ---
 @st.cache_data(ttl=3600) 
